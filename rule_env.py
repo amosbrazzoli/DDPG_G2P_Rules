@@ -78,3 +78,7 @@ class RuleHolder:
         for rule in self.rules:
             row_list.append(f"{rule.graph} -- {rule.weight} -> {rule.phone}")
         return "\n".join(row_list)
+
+    def __len__(self):
+        if len(self.rules) == len(self.target_dict):
+            return len(self.rules)
