@@ -1,11 +1,12 @@
-from random import sample, randint
+from random import sample, randint, random
 from collections import defaultdict, OrderedDict
 
 class Rule:
-    def __init__(self, graph, phone, w = 0):
+    def __init__(self, graph, phone, w = False):
         self.graph = graph
         self.phone = phone
-        self.weight = w
+        if not weight:
+            self.weight = random()
 
     def action(self, weight):
         self.weight = weight
@@ -13,6 +14,9 @@ class Rule:
     def read(self, i):
         for j in range(len(self.phone)):
             yield i+j, self.phone[j], self.weight
+
+    def reset(self):
+        self.weight = random()
 
     def __repr__(self):
         return f"R:({self.graph},{self.weight},{self.phone})"
@@ -27,6 +31,17 @@ class RuleHolder:
         if init_dict:
             for k, v in init_dict.items():
                 self.add_rule(k, v)
+
+
+    def __repr__(self):
+        row_list = []
+        for rule in self.rules:
+            row_list.append(f"{rule.graph} -- {rule.weight} -> {rule.phone}")
+        return "\n".join(row_list)
+
+    def __len__(self):
+        if len(self.rules) == len(self.target_dict):
+            return len(self.rules)
 
     def add_rule(self, k, v, w=0):
         if self.target_dict.get(k, None) == None:
@@ -73,12 +88,15 @@ class RuleHolder:
             out.append(sorted(values)[0][1])
         return ''.join(out)
 
-    def __repr__(self):
-        row_list = []
+    def reset(self):
         for rule in self.rules:
-            row_list.append(f"{rule.graph} -- {rule.weight} -> {rule.phone}")
-        return "\n".join(row_list)
+            rule.reset()
 
-    def __len__(self):
-        if len(self.rules) == len(self.target_dict):
-            return len(self.rules)
+    def step(self, action):
+        '''
+        has to return:
+        observation := state
+        reward := amount for the previous action
+        done := if the episode has terminated
+        infor := diagnostic material
+        '''
