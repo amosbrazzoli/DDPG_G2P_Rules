@@ -11,6 +11,7 @@ torch = "*"
 numpy = "*"
 matplotlib = "*"
 tensorboard = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.7"

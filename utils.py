@@ -21,3 +21,15 @@ class ReplayMemory(object):
 
     def __len__(self):
         return len(self.memory)
+
+def get_alphabet(string_roll):
+    '''
+    Takes a list of strings and returns the set string of all characters
+    '''
+    lexicon = set()
+    counter = 0
+    for word in string_roll:
+        for l in list(word):
+            if l not in lexicon:
+                lexicon.add(l)
+    return ''.join(lexicon)

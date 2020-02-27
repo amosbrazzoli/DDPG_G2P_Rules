@@ -1,12 +1,19 @@
 from random import sample, randint, random
 from collections import defaultdict, OrderedDict
 
+
 class Rule:
     def __init__(self, graph, phone, w = False):
         self.graph = graph
         self.phone = phone
         if not weight:
             self.weight = random()
+
+    def __repr__(self):
+        return f"R:({self.graph},{self.weight},{self.phone})"
+    
+    def __len__(self):
+        return len(self.graph), len(self.phone)
 
     def action(self, weight):
         self.weight = weight
@@ -18,20 +25,23 @@ class Rule:
     def reset(self):
         self.weight = random()
 
-    def __repr__(self):
-        return f"R:({self.graph},{self.weight},{self.phone})"
-
-
 
 class RuleHolder:
-    def __init__(self, maxlen, init_dict=False):
-        self.maxlen = maxlen
+    def __init__(self, Dataset, maxlen=False, init_dict=False):
+        self.dataset = Dataset
         self.rules = []
         self.target_dict = {}
         if init_dict:
             for k, v in init_dict.items():
                 self.add_rule(k, v)
-
+        if not maxlen:
+            temp_max_len = 0
+            for rule in rules:
+                if len(rule)[0] > temp_max_len:
+                    temp_max_len = len(rule)[0]
+            self.maxlen = temp_max_len
+        else:
+            self.maxlen = maxlen
 
     def __repr__(self):
         row_list = []
@@ -92,11 +102,17 @@ class RuleHolder:
         for rule in self.rules:
             rule.reset()
 
-    def step(self, action):
+    def step(self, index, weight):
         '''
         has to return:
         observation := state
         reward := amount for the previous action
         done := if the episode has terminated
         infor := diagnostic material
+
+        Index is arg
         '''
+        self.action(index, weight)
+        observation = self.pull_weights
+
+        for 
