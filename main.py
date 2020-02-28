@@ -132,7 +132,7 @@ def optimize_model():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
-num_episodes = 10
+num_episodes = 100_000
 
 for i_episode in range(num_episodes):
 
@@ -165,7 +165,8 @@ for i_episode in range(num_episodes):
         optimize_model()
 
         if done:
-            episode_acc.append(t+1)
+            #print(episode_acc)
+            episode_acc.append((reward / dataset.lenght)*100 )
             plot_accuracy()
             break
     
