@@ -31,12 +31,14 @@ class RuleHolder:
         self.dataset = Dataset
         self.rules = []
         self.target_dict = {}
+        self.macrocounter = 0
+        self.maxcount = 500
         if init_dict:
             for k, v in init_dict.items():
                 self.add_rule(k, v)
         if not maxlen:
             temp_max_len = 0
-            for rule in rules:
+            for rule in self.rules:
                 if len(rule)[0] > temp_max_len:
                     temp_max_len = len(rule)[0]
             self.maxlen = temp_max_len
@@ -101,6 +103,7 @@ class RuleHolder:
     def reset(self):
         for rule in self.rules:
             rule.reset()
+        self.macrocounter = 0
 
     def step(self, index, weight):
         '''
@@ -108,11 +111,29 @@ class RuleHolder:
         observation := state
         reward := amount for the previous action
         done := if the episode has terminated
-        infor := diagnostic material
+        info := diagnostic material
 
         Index is arg
         '''
         self.action(index, weight)
         observation = self.pull_weights
 
-        for 
+        reward = 0
+        counter = 0
+        for word, pron in self.dataset:
+            counter += 1
+            if self.read(word) == pron:
+                reward +=1
+        
+        if reward / counter > .95:
+            done = True
+        elif self.macrocounter >= self.maxcount:
+            done = True
+        else: done = False
+        self.macrocounter +=1
+
+        return observation, reward, done, None
+
+
+        
+            

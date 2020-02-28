@@ -1,19 +1,24 @@
 from model import DQN
+from datasets import ENG_WUsL
 from utils import ReplayMemory
 from rule_env import RuleHolder, Rule
 
 from math import exp
 from random import random
 from itertools import count
+from collections import namedtuple
 
 import torch
 import torch.optim as optim
 
 import matplotlib.pyplot as plt
 
+dataset = ENG_WUsL()
 
-env = RuleHolder()
+env = RuleHolder(dataset)
 # Initialize rules
+
+
 
 Transitions = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
@@ -138,6 +143,8 @@ for i_episode in range(num_episodes):
 
     for t in count():
         action = select_action(state)
+        print(action)
+        quit()
         _, reward, done, _ = env.step(action.item())
 
 

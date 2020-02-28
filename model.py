@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 class DQN(nn.Module):
     def __init__(self, length):
-        super(self, DQN).__init__()
+        super(DQN, self).__init__()
 
         lin1 = nn.Linear(length, length//3)
         lin2 = nn.Linear(length//3, length//2)
