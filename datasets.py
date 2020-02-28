@@ -1,6 +1,7 @@
 import pandas as pd
 import torch.utils.data as d
 
+from random import randint, sample
 from utils import get_alphabet
 
 class ENG_WUsL:
@@ -58,9 +59,9 @@ class ENG_WUsL:
 
 
 class Dummy:
-    def __init__(self, lenght):
+    def __init__(self, lenght=10_000):
         self.lenght = lenght
-        self.default_rules = {'abc' : 'z',
+        self.default_rules = {'abc' : 'zh',
                             'bca' : 'xl',
                             'cab' : 'xo',
                             'ab' : 'k',
@@ -83,7 +84,7 @@ class Dummy:
         return self.words[index], self.prons[index]
 
     def __next__(self):
-        if self.i <= self.lenght:
+        if self.i < self.lenght:
             self.i +=1
             return self[self.i-1]
         else:
@@ -120,15 +121,14 @@ class Dummy:
         Converts a word using a convertion dicitionary
         uses the longest aplicable rule first
         '''
-        self.rule_max_len = 
         i = 0
         out = []
         while i < len(word):
             j = self.rule_max_len
             while 1 <= j <= self.rule_max_len :
                 #print(i, i+j, word[i:i+j])
-                if self.self.default_rules.get(word[i:i+j], None) != None:
-                    out.append(self.self.default_rules[word[i:i+j]])
+                if self.default_rules.get(word[i:i+j], None) != None:
+                    out.append(self.default_rules[word[i:i+j]])
                     i = i+j
                     break
                 else:
@@ -137,6 +137,6 @@ class Dummy:
         
 
 if __name__ == "__main__":
-    dataset = ENG_WUsL()
+    dataset = Dummy(10)
     for word, pron in dataset:
         print(word, pron)

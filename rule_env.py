@@ -1,19 +1,17 @@
+import torch
 from random import sample, randint, random
 from collections import defaultdict, OrderedDict
 
 
 class Rule:
-    def __init__(self, graph, phone, w = False):
+    def __init__(self, graph, phone, weight = False):
         self.graph = graph
         self.phone = phone
         if not weight:
             self.weight = random()
-
+        self.len = (len(self.graph), len(self.phone))
     def __repr__(self):
         return f"R:({self.graph},{self.weight},{self.phone})"
-    
-    def __len__(self):
-        return len(self.graph), len(self.phone)
 
     def action(self, weight):
         self.weight = weight
@@ -27,20 +25,23 @@ class Rule:
 
 
 class RuleHolder:
-    def __init__(self, Dataset, maxlen=False, init_dict=False):
+    def __init__(self, Dataset, maxlen=False,):
         self.dataset = Dataset
         self.rules = []
         self.target_dict = {}
         self.macrocounter = 0
         self.maxcount = 500
-        if init_dict:
-            for k, v in init_dict.items():
+
+        if self.dataset.default_rules:
+            for k, v in self.dataset.default_rules.items():
                 self.add_rule(k, v)
+
         if not maxlen:
             temp_max_len = 0
             for rule in self.rules:
-                if len(rule)[0] > temp_max_len:
-                    temp_max_len = len(rule)[0]
+                #print(rule.len)
+                if rule.len[0] > temp_max_len:
+                    temp_max_len = rule.len[0]
             self.maxlen = temp_max_len
         else:
             self.maxlen = maxlen
@@ -75,7 +76,7 @@ class RuleHolder:
         self.rules[index].weight = weight
     
     def pull_weights(self):
-        return list(self._pull_weights())
+        return torch.tensor(list(self._pull_weights()))
     
 
     def read(self, word):
@@ -105,7 +106,7 @@ class RuleHolder:
             rule.reset()
         self.macrocounter = 0
 
-    def step(self, index, weight):
+    def step(self, max_tensor):
         '''
         has to return:
         observation := state
@@ -115,11 +116,13 @@ class RuleHolder:
 
         Index is arg
         '''
+        index = int(max_tensor[0])
+        weight = float(max_tensor[1])
         self.action(index, weight)
         observation = self.pull_weights
 
         reward = 0
-        counter = 0
+        counter = 1
         for word, pron in self.dataset:
             counter += 1
             if self.read(word) == pron:
