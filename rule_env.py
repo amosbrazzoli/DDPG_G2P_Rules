@@ -82,6 +82,7 @@ class RuleHolder:
     
 
     def read(self, word):
+        #self.dataset.reset()
         out = []
         pos_dict = defaultdict(lambda: list())
         i = 0
@@ -102,6 +103,9 @@ class RuleHolder:
             #print(index, values)
             out.append(sorted(values)[0][1])
         return ''.join(out)
+
+    def reset_i(self):
+        self.i = 0
 
     def reset(self):
         for rule in self.rules:

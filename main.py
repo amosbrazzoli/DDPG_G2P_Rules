@@ -131,7 +131,7 @@ def optimize_model():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
-num_episodes = 100
+num_episodes = 5
 
 for i_episode in range(num_episodes):
 
@@ -142,6 +142,7 @@ for i_episode in range(num_episodes):
     state = current_screen - last_screen
 
     for t in count():
+
         action = select_action(state)
         _, reward, done, _ = env.step(action)
         reward = torch.tensor([reward]) # must be a 1 dim tensor otherwise tosses error
@@ -166,10 +167,14 @@ for i_episode in range(num_episodes):
 
         if done:
             #print(episode_acc)
+            print(reward)
             episode_acc.append((reward / dataset.lenght)*100 )
             plot_accuracy()
             break
+        else:
+            env.dataset.reset()
     
+    env.reset()
     if i_episode % TARGET_UPDATE == 0:
         target_net.load_state_dict(policy_net.state_dict())
 
