@@ -71,9 +71,11 @@ class RuleHolder:
         if len(args) == len(self.rules):
             for i, w in enumerate(args):
                 self.rules[i].weight = w
-    
-    def action(self, index, weight):
-        self.rules[index].weight = weight
+
+    def perturbate_weights(self, args):
+        if len(args) == len(self.rules):
+            for i, w in enumerate(args):
+                self.rules[i].weight += w
     
     def pull_weights(self):
         return torch.tensor(list(self._pull_weights()))
@@ -106,7 +108,7 @@ class RuleHolder:
             rule.reset()
         self.macrocounter = 0
 
-    def step(self, max_tensor):
+    def step(self, variation):
         '''
         has to return:
         observation := state
@@ -116,11 +118,9 @@ class RuleHolder:
 
         Index is arg
         '''
-        index = int(max_tensor[0])
-        weight = float(max_tensor[1])
-        self.action(index, weight)
-        observation = self.pull_weights
 
+        self.perturbate_weights(variation)
+        observation = self.pull_weights
         reward = 0
         counter = 1
         for word, pron in self.dataset:

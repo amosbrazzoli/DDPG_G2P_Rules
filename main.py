@@ -18,7 +18,7 @@ dataset = Dummy()
 
 env = RuleHolder(dataset)
 # Initialize rules
-env.add_rule('ad', 'k')
+#env.add_rule('ad', 'k')
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
@@ -61,9 +61,9 @@ def select_action(state):
             # t.max(1) will return largest column value of each row.
             # second column on max result is index of where max element was
             # found, so we pick action with the larger expected reward.
-            return torch.tensor(policy_net(state).max(0)[::-1])
+            return policy_net(state)
     else:
-        return torch.tensor([randint(0, len(env)-1), random()])
+        return torch.randn(len(env))
 
 episode_acc = []
 
@@ -78,7 +78,7 @@ def plot_accuracy():
 
     if len(accuracy_t) >= 100:
         means = accuracy_t.unfold(0, 100, 1).mean(1).view(-1)
-        means = torch.cat((torch.zeros(99), means))
+        #means = torch.cat((torch.zeros(99), means))
         plt.plot(means.numpy())
     
     plt.pause(0.001)
@@ -107,7 +107,7 @@ def optimize_model():
     # columns of actions taken. These are the actions which would've been taken
     # for each batch state according to policy_net
 
-    state_action_values = policy_net(state_batch).max(1)[0]
+    state_action_values = policy_net(state_batch)
    
     # Compute V(s_{t+1}) for all next states.
     # Expected values of actions for non_final_next_states are computed based
@@ -115,12 +115,11 @@ def optimize_model():
     # This is merged based on the mask, such that we'll have either the expected
     # state value or 0 in case the state was final
 
-    next_state_values = torch.zeros(BATCH_SIZE)
-    next_state_values[non_final_mask] =\
-        target_net(non_final_next_states).max(1)[0].detach()
+    next_state_values = torch.zeros(BATCH_SIZE, len(env))
+    next_state_values[non_final_mask] = target_net(non_final_next_states).detach()
 
     # Compute the expected Q values
-    expected_state_action_values = (next_state_values * GAMMA) + reward_batch.squeeze()
+    expected_state_action_values = (next_state_values * GAMMA) + reward_batch
 
     # Compute Huber loss
     loss = F.smooth_l1_loss(state_action_values, expected_state_action_values)
@@ -132,7 +131,7 @@ def optimize_model():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
-num_episodes = 100_000
+num_episodes = 100
 
 for i_episode in range(num_episodes):
 
@@ -146,6 +145,7 @@ for i_episode in range(num_episodes):
         action = select_action(state)
         _, reward, done, _ = env.step(action)
         reward = torch.tensor([reward]) # must be a 1 dim tensor otherwise tosses error
+
 
         last_screen = current_screen
         current_screen = env.pull_weights()
