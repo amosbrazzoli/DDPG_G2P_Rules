@@ -17,7 +17,7 @@ class ENG_WUsL:
                                 usecols=["Word","Pron"],
                                 delimiter=',',
                                 na_values='#')
-        self.data.Pron = self.data.Pron.replace('[""\.]','',regex=True)
+        self.data.Pron = self.data.Pron.replace(r'[""\.]','',regex=True)
         self.data.dropna(axis=0,
                         how='any',
                         inplace=True)

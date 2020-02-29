@@ -60,6 +60,7 @@ class RuleHolder:
         if self.target_dict.get(k, None) == None:
             self.target_dict[k] = len(self.rules)
             self.rules.append(Rule(k, v, w))
+
         else:
             raise KeyError(f'Key {k} is already set as: {self.rules[k]}')
 
@@ -78,11 +79,22 @@ class RuleHolder:
                 self.rules[i].weight += w
     
     def pull_weights(self):
-        return torch.tensor(list(self._pull_weights()))
+        return torch.Tensor(list(self._pull_weights()))
+
+    def observation_space(self):
+        return len(self.rules)
+
+    def action_space(self):
+        return len(self.rules)
     
+    def remove_rule(self, key):
+        i = self.target_dict.get(key, None)
+        if i != None:
+            self.target_dict.pop(key)
+            self.rules.pop(i)
+
 
     def read(self, word):
-        #self.dataset.reset()
         out = []
         pos_dict = defaultdict(lambda: list())
         i = 0
@@ -105,12 +117,13 @@ class RuleHolder:
         return ''.join(out)
 
     def reset_i(self):
-        self.i = 0
+        self.dataset.reset()
 
     def reset(self):
         for rule in self.rules:
             rule.reset()
         self.macrocounter = 0
+        return self.pull_weights()
 
     def step(self, variation):
         '''
@@ -124,14 +137,14 @@ class RuleHolder:
         '''
 
         self.perturbate_weights(variation)
-        observation = self.pull_weights
+        observation = self.pull_weights()
         reward = 0
         counter = 1
         for word, pron in self.dataset:
             counter += 1
             if self.read(word) == pron:
                 reward +=1
-        
+        self.reset_i()
         if reward / counter > .95:
             done = True
         elif self.macrocounter >= self.maxcount:
@@ -139,7 +152,7 @@ class RuleHolder:
         else: done = False
         self.macrocounter +=1
 
-        return observation, reward, done, None
+        return observation, torch.tensor(reward), torch.tensor(done), None
 
 
         

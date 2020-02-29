@@ -2,7 +2,7 @@ from collections import namedtuple
 from random import sample
 
 Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward'))
+                        ('state', 'action', 'reward',  'next_state', 'done'))
 
 class ReplayMemory(object):
 
@@ -29,9 +29,14 @@ def get_alphabet(string_roll):
     Takes a list of strings and returns the set string of all characters
     '''
     lexicon = set()
-    counter = 0
     for word in string_roll:
         for l in list(word):
             if l not in lexicon:
                 lexicon.add(l)
     return ''.join(lexicon)
+
+def prod(*iterable):
+    cache = 1
+    for i in iterable:
+        cache *= i
+    return cache
