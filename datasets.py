@@ -136,6 +136,10 @@ class Dummy:
         return ''.join(out)
         
 
+class ITA_Phonitalia:
+    def __init__(self, path="Datasets/ITA/Phonitalia.xlsx"):
+        self.path = path
+
 if __name__ == "__main__":
     dataset = Dummy(10)
     for word, pron in dataset:
