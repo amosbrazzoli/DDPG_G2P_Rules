@@ -72,7 +72,7 @@ class Dummy:
                             ('c', 'c')]
 
         self.default_rules_dic = {k : value for (k, value) in self.default_rules }
-
+ 
         self.rule_max_len = max(map(lambda x: len(x[0]), #maps the lenght of the first element
                                     self.default_rules))
         self.charset = {'a', 'b', 'c'}
@@ -147,7 +147,35 @@ class ITA_Phonitalia:
         self.word_abc = get_alphabet(self.data.Word.to_list())
         self.pron_abc = get_alphabet(self.data.Pron.to_list())
         self.i = 0
-        self.default_rules = []
+        self.default_rules = [("a", "a"),
+                                ("b", "b"),
+                                ("c" , "k"),
+                                ("d", "d"),
+                                ("e", "e"),
+                                ("e", "E"),
+                                ("f", "f"),
+                                ("gh", "G"),
+                                ("h", ""),
+                                ("i", "i"),
+                                ("l", "l"),
+                                ("m", "m"),
+                                ("n", "n"),
+                                ("o", "O"),
+                                ("o", "o"),
+                                ("p", "p"),
+                                ("qu", "kw"),
+                                ("qqu", "kkw"),
+                                ("r", "r"),
+                                ("s", "s"),
+                                ("t", "t"),
+                                ("u", "u"),
+                                ("v", "v"),
+                                ("z", "z"),
+                                ("x", "ks"),
+                                ("y", "i"),
+                                ("j", "j"),
+                                ("gl", "LL"),
+                                ("sc", "SS")]
 
     def __getitem__(self, index):
         x = self.data.Word.iloc[index]
