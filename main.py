@@ -26,12 +26,13 @@ env = RuleHolder(dataset)
 test_env = RuleHolder(dataset)
 
 # Initialize rules
+'''
 for environment in [env, test_env]:
     environment.add_rule('ad', 'k')
     environment.add_rule('af', 'z')
     environment.add_rule('cd', 'q')
     environment.remove_rule('abc')
-
+'''
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'reward',  'next_state', 'done'))
@@ -104,7 +105,7 @@ def Q_loss():
     # Computes the subtractor in the Bellman Equation
     with torch.no_grad():
         q_stable = metamodel.Q_stable(next_obs, metamodel.Policy_stable(next_obs))
-        print(reward.shape, done.shape. q_stable.shape, sep="\n")
+        #print(reward.shape, done.shape. q_stable.shape, sep="\n")
         subtractor = reward + GAMMA * (1 - done) * q_stable
 
     # MSE Loss against subtractor
@@ -188,7 +189,7 @@ for i_episode in range(total_steps):
     observation = obs_prime
 
     #Handle end of trajectory
-    if done or (episode_lenght == MAX_EPISODE_LEN):
+    if episode_lenght == MAX_EPISODE_LEN:
         episode_acc.append((reward / dataset.lenght)*100 )
         plot_accuracy()
         print(f"Episode: {i_episode % STEPS_PER_EPOCH}\tReward: {episode_reward}\tLenght: {episode_lenght}")

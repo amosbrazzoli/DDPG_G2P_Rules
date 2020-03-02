@@ -10,8 +10,16 @@ class Rule:
         if not weight:
             self.weight = random()
         self.len = (len(self.graph), len(self.phone))
+
     def __repr__(self):
         return f"R:({self.graph},{self.weight},{self.phone})"
+
+    def __eq__(self, other):
+        if self.graph == other.graph:
+            if self.phone == other.phone:
+                if self.weight == other.weight:
+                    return True
+        return False
 
     def action(self, weight):
         self.weight = weight
@@ -19,7 +27,7 @@ class Rule:
     def read(self, i):
         for j in range(len(self.phone)):
             yield i+j, self.phone[j], self.weight
-
+    
     def reset(self):
         self.weight = random()
 
@@ -33,18 +41,15 @@ class RuleHolder:
         self.maxcount = 500
 
         if self.dataset.default_rules:
-            for k, v in self.dataset.default_rules.items():
+            for k, v in self.dataset.default_rules:
                 self.add_rule(k, v)
 
         if not maxlen:
-            temp_max_len = 0
+            maxlen = 0
             for rule in self.rules:
-                #print(rule.len)
-                if rule.len[0] > temp_max_len:
-                    temp_max_len = rule.len[0]
-            self.maxlen = temp_max_len
-        else:
-            self.maxlen = maxlen
+                if rule.len[0] > maxlen:
+                    maxlen = rule.len[0]
+        self.maxlen = maxlen
 
     def __repr__(self):
         row_list = []
@@ -53,22 +58,24 @@ class RuleHolder:
         return "\n".join(row_list)
 
     def __len__(self):
-        if len(self.rules) == len(self.target_dict):
-            return len(self.rules)
+         return len(self.rules)
 
     def add_rule(self, k, v, w=0):
+        rule_candidate = Rule(k, v, w)
         if self.target_dict.get(k, None) == None:
-            self.target_dict[k] = len(self.rules)
-            self.rules.append(Rule(k, v, w))
-
+            self.target_dict[k] = [len(self.rules)]
         else:
-            raise KeyError(f'Key {k} is already set as: {self.rules[k]}')
+            for index in self.target_dict[k]:
+                if self.rules[index] == rule_candidate:
+                    raise Exception(f"Rule {rule_candidate} already present")
+            self.target_dict[k].append(len(self.rules))
+        self.rules.append(rule_candidate)
 
     def _pull_weights(self):
         for rule in self.rules:
             yield rule.weight
 
-    def set_weights(self, *args):
+    def set_weights(self, args):
         if len(args) == len(self.rules):
             for i, w in enumerate(args):
                 self.rules[i].weight = w
@@ -77,6 +84,8 @@ class RuleHolder:
         if len(args) == len(self.rules):
             for i, w in enumerate(args):
                 self.rules[i].weight += w
+        else:
+            raise Exception(f"Expected size {len(self.rules)} bgot {len(args)}")
     
     def pull_weights(self):
         return torch.Tensor(list(self._pull_weights()))
@@ -87,32 +96,30 @@ class RuleHolder:
     def action_space(self):
         return len(self.rules)
     
-    def remove_rule(self, key):
-        i = self.target_dict.get(key, None)
-        if i != None:
-            self.target_dict.pop(key)
-            self.rules.pop(i)
-
+    def remove_rule(self, key, value):
+        rules_indexes = self.target_dict.get(key, None)
+        if rules_indexes != None:
+            for i, list_i in enumerate(self.target_dict[key]):
+                if self.rules[self.target_dict[key][list_i]].phone == value:
+                    self.target_dict[key].remove(i)
+                    self.rules.pop(list_i)
 
     def read(self, word):
         out = []
         pos_dict = defaultdict(lambda: list())
         i = 0
-        while  i <len(word):
+        while  i < len(word):
             j = self.maxlen
             while 1 <= j <= self.maxlen:
-                #print(i, i+j, word[i:i+j])
                 if self.target_dict.get(word[i:i+j], None) != None:
-                    for index, phone, weight in \
-                        self.rules[self.target_dict[word[i:i+j]]].read(i):
-                        pos_dict[index].append((weight, phone))
+                    for rule_index in self.target_dict[word[i:i+j]]:
+                        for index, phone, weight in self.rules[rule_index].read(i):
+                            pos_dict[index].append((weight, phone))
                     i = i+j
-                    break
+                    break # why is this needed
                 else:
                     j -= 1
-        #print(pos_dict)
         for index, values in pos_dict.items():
-            #print(index, values)
             out.append(sorted(values)[0][1])
         return ''.join(out)
 
@@ -154,6 +161,8 @@ class RuleHolder:
 
         return observation, torch.tensor(reward), torch.tensor(done), None
 
-
-        
-            
+if __name__ == "__main__":
+    from datasets import Dummy
+    env = RuleHolder(Dummy(10))
+    print(env.rules)
+    
