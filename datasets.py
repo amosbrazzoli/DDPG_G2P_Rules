@@ -154,6 +154,7 @@ class ITA_Phonitalia:
                                 ("e", "e"),
                                 ("e", "E"),
                                 ("f", "f"),
+                                ("g", "G"),
                                 ("gh", "G"),
                                 ("h", ""),
                                 ("i", "i"),
@@ -164,7 +165,6 @@ class ITA_Phonitalia:
                                 ("o", "o"),
                                 ("p", "p"),
                                 ("qu", "kw"),
-                                ("qqu", "kkw"),
                                 ("r", "r"),
                                 ("s", "s"),
                                 ("t", "t"),
@@ -175,7 +175,11 @@ class ITA_Phonitalia:
                                 ("y", "i"),
                                 ("j", "j"),
                                 ("gl", "LL"),
-                                ("sc", "SS")]
+                                ("sc", "SS"),
+                                ("gn", "NN"),
+                                ("k", "k"),
+                                ("w","w"),
+                                ("q", "k")]
 
     def __getitem__(self, index):
         x = self.data.Word.iloc[index]
@@ -195,6 +199,10 @@ class ITA_Phonitalia:
     def __len__(self):
         return self.data.shape[0]
 
+    def reset(self):
+        self.i = 0
+
+        
 if __name__ == "__main__":
     dataset = Dummy(10)
     print(dataset.default_rules)

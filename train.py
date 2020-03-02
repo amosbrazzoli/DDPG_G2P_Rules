@@ -1,5 +1,4 @@
 from model import DDPG_Metamodel
-from datasets import Dummy
 from utils import ReplayMemory
 from rule_env import RuleHolder, Rule
 
@@ -9,6 +8,7 @@ from itertools import count
 from collections import namedtuple
 
 import torch
+import datasets
 import time
 import numpy as np
 import torch.optim as optim
@@ -20,7 +20,7 @@ device = 'gpu' if torch.cuda.is_available() else 'cpu'
 
 print(f"Running on {device}")
 
-dataset = Dummy()
+dataset = datasets.ITA_Phonitalia()
 
 env = RuleHolder(dataset)
 test_env = RuleHolder(dataset)
@@ -160,6 +160,7 @@ start_time = time.time()
 observation, episode_reward, episode_lenght = env.reset(), 0, 0
 
 for i_episode in range(total_steps):
+    print(env.pull_weights())
 
     if i_episode > START_STEPS:
         action = select_action(observation, ACTION_NOISE)
@@ -190,7 +191,7 @@ for i_episode in range(total_steps):
 
     #Handle end of trajectory
     if episode_lenght == MAX_EPISODE_LEN:
-        episode_acc.append((reward / dataset.lenght)*100 )
+        episode_acc.append((reward / len(dataset))*100 )
         plot_accuracy()
         print(f"Episode: {i_episode % STEPS_PER_EPOCH}\tReward: {episode_reward}\tLenght: {episode_lenght}")
         observation, episode_reward, episode_lenght = env.reset(), 0, 0

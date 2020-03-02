@@ -115,10 +115,11 @@ class RuleHolder:
                     for rule_index in self.target_dict[word[i:i+j]]:
                         for index, phone, weight in self.rules[rule_index].read(i):
                             pos_dict[index].append((weight, phone))
-                    i = i+j
-                    break # why is this needed
+                        i = i+j
+                        break # why is this needed
                 else:
                     j -= 1
+
         for index, values in pos_dict.items():
             out.append(sorted(values)[0][1])
         return ''.join(out)
@@ -162,7 +163,13 @@ class RuleHolder:
         return observation, torch.tensor(reward), torch.tensor(done), None
 
 if __name__ == "__main__":
-    from datasets import Dummy
-    env = RuleHolder(Dummy(10))
-    print(env.rules)
-    
+    import datasets
+    env = RuleHolder(datasets.ITA_Phonitalia())
+    corr = 0
+    total = 0
+    for word, pron in env.dataset:
+        red = env.read(word)
+        total +=1 
+        if red==pron:
+            corr += 1
+    print((corr/total)*100)
