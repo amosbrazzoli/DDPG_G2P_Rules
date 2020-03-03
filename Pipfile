@@ -13,6 +13,7 @@ matplotlib = "*"
 tensorboard = "*"
 pandas = "*"
 xlrd = "*"
+tqdm = "*"
 
 [requires]
 python_version = "3.7"

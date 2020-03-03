@@ -33,8 +33,9 @@ class Rule:
 
 
 class RuleHolder:
-    def __init__(self, Dataset, maxlen=False,):
+    def __init__(self, Dataset, sample_size=1000, maxlen=False):
         self.dataset = Dataset
+        self.sample_size = sample_size
         self.rules = []
         self.target_dict = {}
         self.macrocounter = 0
@@ -133,7 +134,7 @@ class RuleHolder:
         self.macrocounter = 0
         return self.pull_weights()
 
-    def step(self, variation):
+    def step(self, variation, complete=False):
         '''
         has to return:
         observation := state
@@ -143,17 +144,19 @@ class RuleHolder:
 
         Index is arg
         '''
-
+        if complete:
+            iterator = self.dataset
+        else:
+            iterator = self.dataset.sample(self.sample_size)
+        
         self.perturbate_weights(variation)
         observation = self.pull_weights()
         reward = 0
-        counter = 1
-        for word, pron in self.dataset:
-            counter += 1
+        for word, pron in interator:
             if self.read(word) == pron:
                 reward +=1
         self.reset_i()
-        if reward / counter > .95:
+        if reward / self.sample_size > .95:
             done = True
         elif self.macrocounter >= self.maxcount:
             done = True

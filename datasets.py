@@ -37,10 +37,13 @@ class Dataset:
     def sample(self, sample_lenght):
         while len(self.sampled_indexes) < sample_lenght:
             while True:
-                x = randint(0, self.__len__())
+                x = randint(0, self.__len__()-2) # -2 to handle for heathers and last included
                 if x not in self.sampled_indexes:
                     self.sampled_indexes.add(x)
-                    yield self[x]
+                    try:
+                        yield self[x]
+                    except:
+                        print(x, self[x-1])
                     break
         self.sampled_indexes = set()
 
@@ -183,7 +186,3 @@ class Dummy:
         
 if __name__ == "__main__":
     dataset = ITA_Phonitalia()
-    for i, t in enumerate(dataset.sample(100)):
-        print(i, t)
-    for i, t in enumerate(dataset.sample(100)):
-        print(i, t)

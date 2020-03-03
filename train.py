@@ -3,6 +3,7 @@ from utils import ReplayMemory
 from rule_env import RuleHolder, Rule
 
 from math import exp
+from tqdm import tqdm
 from random import random, randint
 from itertools import count
 from collections import namedtuple
@@ -39,21 +40,21 @@ Transition = namedtuple('Transition',
 
 cache = ReplayMemory(1000)
 
-BATCH_SIZE = 100
+BATCH_SIZE = 50
 GAMMA = 0.999
 RHO = 0.995
-EPS_START = 0.9
-EPS_END = 0.05
-EPS_DECAY = 200
-TARGET_UPDATE = 10
-MAX_EPOCHS = 10
-STEPS_PER_EPOCH = 100
-ACT_LIMIT = 5
+#EPS_START = 0.9
+#EPS_END = 0.05
+#EPS_DECAY = 200
+#TARGET_UPDATE = 10
+MAX_EPISODES = 50
+STEPS_PER_EPOCH = 50
+ACT_LIMIT = 5 # sets the limit of action entry
 MAX_EPISODE_LEN = 20
 UPDATE_AFTER = 5
 UPDATE_EVERY = 10
-NUM_TEST_EPISODES = 3
-START_STEPS = 2
+NUM_TEST_EPISODES = 1
+START_STEPS = 5
 ACTION_NOISE = 0.1
 
 metamodel = DDPG_Metamodel(env.observation_space(), env.action_space())
@@ -106,107 +107,94 @@ def Q_loss():
     with torch.no_grad():
         q_stable = metamodel.Q_stable(next_obs, metamodel.Policy_stable(next_obs))
         #print(reward.shape, done.shape. q_stable.shape, sep="\n")
-        subtractor = reward + GAMMA * (1 - done) * q_stable
+        #subtractor = reward + GAMMA * (1 - done) * q_stable
+        adder = torch.mul((GAMMA * (1-done)).unsqueeze(1).expand_as(q_stable), q_stable)
+        subtractor = torch.add(reward.unsqueeze(1).expand_as(adder), adder)
 
     # MSE Loss against subtractor
     return ((q_unstable - subtractor)**2 ).mean()
 
 def Policy_loss():
     obs = observation_batch(cache, BATCH_SIZE)
-    policy_loss = metamodel.Q_unstable(obs, metamodel.Policy_unstable()) 
+    policy_loss = metamodel.Q_unstable(obs, metamodel.Policy_unstable(obs)) 
     return - policy_loss.mean()
 
 
 def test_policy():
     for j in range(NUM_TEST_EPISODES):
         observation, done, episode_reward, episode_lenght = test_env.reset(), 0, 0, 0
-        while not ( done or (episode_lenght == MAX_EPISODE_LEN)):
-            observation, reward, done, _ = test_env.step(select_action(observation, 0))
-            episode_reward += reward
-            episode_lenght += 1
-        print(f"Episode: {j}\tReward: {episode_reward}\tLenght: {episode_lenght}")
+        observation, reward, done, _ = test_env.step(select_action(observation, 0), complete=True)
+        episode_reward += reward
+        episode_lenght += 1
+        print(f"Episode: {i_episode}\tReward: {episode_reward/len(env.dataset)}\tLenght: {episode_lenght}")
 
     
 def optimize_model():
     if len(cache) < BATCH_SIZE:
-        return
+        return False
     metamodel.Q_optim.zero_grad()
     q_loss = Q_loss()
-    print(q_loss)
     q_loss.backward()
     metamodel.Q_optim.step()
 
+    # turns off to not compute useless gradients
     for parameter in metamodel.Q_unstable.parameters():
         parameter.requires_grad = False
 
     metamodel.Policy_optim.zero_grad()
     policy_loss = Policy_loss()
-    print(policy_loss)
     policy_loss.backward()
     metamodel.Policy_optim.step()
 
+    # turns back on
     for parameter in metamodel.Q_unstable.parameters():
         parameter.requires_grad = True
 
+    # transfers parameters, weighted for rho to stabilise
     with torch.no_grad():
         for unstable_parameter, stable_parameter in zip(metamodel.Q_unstable.parameters(),
                                                         metamodel.Q_stable.parameters()):
             stable_parameter.data.mul_(RHO)
             stable_parameter.data.add_((1 - RHO)* unstable_parameter.data)
 
-
-total_steps = MAX_EPOCHS * STEPS_PER_EPOCH
-start_time = time.time()
-observation, episode_reward, episode_lenght = env.reset(), 0, 0
-
-for i_episode in range(total_steps):
-    print(env.pull_weights())
-
-    if i_episode > START_STEPS:
-        action = select_action(observation, ACTION_NOISE)
-    else:
-        action = torch.randn(env.action_space()) # should be implemented as actionspace BOX
-
-    # Stepping the Environment
-    obs_prime, reward, done, _ = env.step(action)
-
-    episode_reward += reward
-    episode_lenght += 1
-
-    # Ignore the "done" signal if it comes from hitting the time
-    # horizon (that is, when it's an artificial terminal signal
-    # that isn't based on the agent's state)
-    done = torch.tensor(0) if i_episode==MAX_EPISODE_LEN else done
-
-    #print(observation, reward, obs_prime, done, sep="\n")
-
-    cache.push(observation.unsqueeze(0),
-            action.unsqueeze(0),
-            reward.unsqueeze(0).float(),
-            obs_prime.unsqueeze(0),
-            done.unsqueeze(0).float())
-
-    #Update to the most recent observation
-    observation = obs_prime
-
-    #Handle end of trajectory
-    if episode_lenght == MAX_EPISODE_LEN:
-        episode_acc.append((reward / len(dataset))*100 )
-        plot_accuracy()
-        print(f"Episode: {i_episode % STEPS_PER_EPOCH}\tReward: {episode_reward}\tLenght: {episode_lenght}")
-        observation, episode_reward, episode_lenght = env.reset(), 0, 0
+    return True
 
 
-    #Update hanling
-    if i_episode >= UPDATE_AFTER and i_episode % UPDATE_EVERY == 0:
-        for _ in range(UPDATE_EVERY):
-            optimize_model()
-            continue
+for i_episode in range(MAX_EPISODES):
+    episode_reward = 0
+    observation = env.reset()
 
-    if (i_episode + 1) % STEPS_PER_EPOCH == 0:
-        epoch = (i_episode + 1) // STEPS_PER_EPOCH
+    for i_step in tqdm(range(STEPS_PER_EPOCH)):
 
+        # Does explorative actions for an ammount of steps
+        if i_episode * STEPS_PER_EPOCH + i_step < START_STEPS:
+            action = select_action(observation, ACTION_NOISE)
+        else:
+            action = torch.randn(env.action_space()) # should be implemented as actionspace BOX
+
+        # Stepping the Environment
+        obs_prime, reward, done, _ = env.step(action)
+        episode_reward += reward
+
+        if done:
+            print("Got one")
+
+        #print(observation, reward, obs_prime, done, sep="\n")
+
+        cache.push(observation.unsqueeze(0),
+                action.unsqueeze(0),
+                reward.unsqueeze(0).float(),
+                obs_prime.unsqueeze(0),
+                done.unsqueeze(0).float())
+        
+        #print(len(cache))
+
+        #Update to the most recent observation
+        observation = obs_prime
+        status = optimize_model()
+
+    if status:
         test_policy()
-    
+        
 print('Complete')
 plt.show()
