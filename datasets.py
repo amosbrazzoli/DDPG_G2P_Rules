@@ -4,43 +4,23 @@ import torch.utils.data as d
 from random import randint, sample
 from utils import get_alphabet
 
-class ENG_WUsL:
-    '''
-    Implementa a class for the English Lexicon Project Datase from the Washington University in Saint Louis
-    available at: https://elexicon.wustl.edu/query13/query13.html
-    '''
-    def __init__(self):
-        self.path = 'Datasets/ENG/WUsLData.csv'
-        self.data = pd.read_csv(self.path,
-                                usecols=["Word","Pron"],
-                                delimiter=',',
-                                na_values='#')
-        self.data.Pron = self.data.Pron.replace(r'[""\.]','',regex=True)
-        self.data.dropna(axis=0,
-                        how='any',
-                        inplace=True)
-        self.data.reset_index(inplace=True)
-        self.word_abc = get_alphabet(self.data.Word.to_list())
-        self.pron_abc = get_alphabet(self.data.Pron.to_list())
-        # added for naming and lexical decision
-
-        # implements the iterator
+class Dataset:
+    def __init__(self, data, headers):
+        self.header = headers
+        self.data = data
+        self.words_name = headers[0]
+        self.prons_name = headers[1]
         self.i = 0
+        self.word_abc = get_alphabet(self.data[self.words_name].to_list())
+        self.pron_abc = get_alphabet(self.data[self.prons_name].to_list())
+        self.sampled_indexes = set()
 
-        ## FURTHER, Might implement a first way of adding rules
-        self.default_rules = {}
-    
     def __getitem__(self, index):
-        '''
-        Returns the coupling of word and pronuntiation
-        '''
-        x = self.data.Word.iloc[index].lower()
-        y = self.data.Pron.iloc[index]
-        return x, y
+        return self.data[self.words_name].iloc[index].lower(), self.data[self.prons_name].iloc[index]
 
     def __next__(self):
-        if self.i <  self.__len__():
-            self.i += 1
+        if self.i < self.__len__():
+            self.i +=1
             return self[self.i-1]
         else:
             raise StopIteration()
@@ -49,12 +29,77 @@ class ENG_WUsL:
         return self
 
     def __len__(self):
-        'Returns the lenght of the dataset'
         return self.data.shape[0]
 
     def reset(self):
         self.i = 0
 
+    def sample(self, sample_lenght):
+        while len(self.sampled_indexes) < sample_lenght:
+            while True:
+                x = randint(0, self.__len__())
+                if x not in self.sampled_indexes:
+                    self.sampled_indexes.add(x)
+                    yield self[x]
+                    break
+        self.sampled_indexes = set()
+
+class ENG_WUsL(Dataset):
+    def __init__(self, path='Datasets/ENG/WUsLData.csv', headers=["Word","Pron"]):
+        self.path = path
+        self.headers = headers
+        self.data = pd.read_csv(self.path,
+                            usecols=self.headers,
+                            delimiter=',',
+                            na_values='#')
+        self.data.Pron = self.data[self.headers[1]].replace(r'[""\.]','',regex=True)
+        self.data.dropna(axis=0,
+                    how='any',
+                    inplace=True)
+        self.data.reset_index(inplace=True)
+        super().__init__(self.data, self.headers)
+
+class ITA_Phonitalia(Dataset):
+    def __init__(self, path="Datasets/ITA/Phonitalia.csv", headers=["Word", "Pron"]):
+        self.path = path
+        self.headers = headers
+        self.data = pd.read_csv(self.path,
+                                    delimiter=",")
+        self.data.dropna(inplace=True)
+        self.default_rules = [("a", "a"),
+                                ("b", "b"),
+                                ("c" , "k"),
+                                ("d", "d"),
+                                ("e", "e"),
+                                ("e", "E"),
+                                ("f", "f"),
+                                ("g", "G"),
+                                ("gh", "G"),
+                                ("h", ""),
+                                ("i", "i"),
+                                ("l", "l"),
+                                ("m", "m"),
+                                ("n", "n"),
+                                ("o", "O"),
+                                ("o", "o"),
+                                ("p", "p"),
+                                ("qu", "kw"),
+                                ("r", "r"),
+                                ("s", "s"),
+                                ("t", "t"),
+                                ("u", "u"),
+                                ("v", "v"),
+                                ("z", "z"),
+                                ("x", "ks"),
+                                ("y", "i"),
+                                ("j", "j"),
+                                ("gl", "LL"),
+                                ("sc", "SS"),
+                                ("gn", "NN"),
+                                ("k", "k"),
+                                ("w","w"),
+                                ("q", "k")]
+        super().__init__(self.data, self.headers)
 
 class Dummy:
     def __init__(self, lenght=10_000):
@@ -115,7 +160,7 @@ class Dummy:
                                         min(self.rule_max_len,maxlen-len(out)))))
             out = ''.join(temp)
             temp = []
-        return out
+        yield out
     
     def convert(self, word):
         '''
@@ -136,73 +181,9 @@ class Dummy:
                     j -= 1
         return ''.join(out)
         
-
-class ITA_Phonitalia:
-    def __init__(self, path="Datasets/ITA/Phonitalia.csv"):
-        self.path = path
-        self.data = pd.read_csv(self.path,
-                                    delimiter=",")
-        self.data.dropna(inplace=True)
-
-        self.word_abc = get_alphabet(self.data.Word.to_list())
-        self.pron_abc = get_alphabet(self.data.Pron.to_list())
-        self.i = 0
-        self.default_rules = [("a", "a"),
-                                ("b", "b"),
-                                ("c" , "k"),
-                                ("d", "d"),
-                                ("e", "e"),
-                                ("e", "E"),
-                                ("f", "f"),
-                                ("g", "G"),
-                                ("gh", "G"),
-                                ("h", ""),
-                                ("i", "i"),
-                                ("l", "l"),
-                                ("m", "m"),
-                                ("n", "n"),
-                                ("o", "O"),
-                                ("o", "o"),
-                                ("p", "p"),
-                                ("qu", "kw"),
-                                ("r", "r"),
-                                ("s", "s"),
-                                ("t", "t"),
-                                ("u", "u"),
-                                ("v", "v"),
-                                ("z", "z"),
-                                ("x", "ks"),
-                                ("y", "i"),
-                                ("j", "j"),
-                                ("gl", "LL"),
-                                ("sc", "SS"),
-                                ("gn", "NN"),
-                                ("k", "k"),
-                                ("w","w"),
-                                ("q", "k")]
-
-    def __getitem__(self, index):
-        x = self.data.Word.iloc[index]
-        y = self.data.Pron.iloc[index]
-        return x, y
-
-    def __next__(self):
-        if self.i < self.__len__():
-            self.i += 1
-            return self[self.i-1]
-        else:
-            raise StopIteration()
-
-    def __iter__(self):
-        return self
-
-    def __len__(self):
-        return self.data.shape[0]
-
-    def reset(self):
-        self.i = 0
-
-        
 if __name__ == "__main__":
-    dataset = Dummy(10)
-    print(dataset.default_rules)
+    dataset = ITA_Phonitalia()
+    for i, t in enumerate(dataset.sample(100)):
+        print(i, t)
+    for i, t in enumerate(dataset.sample(100)):
+        print(i, t)
