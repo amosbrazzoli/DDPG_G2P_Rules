@@ -111,16 +111,15 @@ class RuleHolder:
         i = 0
         while  i < len(word):
             j = self.maxlen
-            while 1 <= j <= self.maxlen:
+            while 1 <= j <= self.maxlen and i < len(word):
                 if self.target_dict.get(word[i:i+j], None) != None:
                     for rule_index in self.target_dict[word[i:i+j]]:
                         for index, phone, weight in self.rules[rule_index].read(i):
+                            print(i, j)
                             pos_dict[index].append((weight, phone))
-                        i = i+j
-                        break # why is this needed
+                    i = i+j
                 else:
                     j -= 1
-
         for index, values in pos_dict.items():
             out.append(sorted(values)[0][1])
         return ''.join(out)
@@ -168,11 +167,4 @@ class RuleHolder:
 if __name__ == "__main__":
     import datasets
     env = RuleHolder(datasets.ITA_Phonitalia())
-    corr = 0
-    total = 0
-    for word, pron in env.dataset:
-        red = env.read(word)
-        total +=1 
-        if red==pron:
-            corr += 1
-    print((corr/total)*100)
+    print(env.read("cane"))
