@@ -49,7 +49,6 @@ class RuleHolder:
             maxlen = 0
             for rule in self.rules:
                 if rule.len[0] > maxlen:
-                    print(rule.len)
                     maxlen = rule.len[0]
         self.maxlen = maxlen
 
@@ -121,8 +120,6 @@ class RuleHolder:
 
                 else:
                     j -= 1
-                
-        print(pos_dict)
         for index, values in pos_dict.items():
             out.append(sorted(values)[0][1])
         return ''.join(out)
@@ -154,7 +151,7 @@ class RuleHolder:
         self.perturbate_weights(variation)
         observation = self.pull_weights()
         reward = 0
-        for word, pron in interator:
+        for word, pron in iterator:
             if self.read(word) == pron:
                 reward +=1
         self.reset_i()
@@ -170,4 +167,11 @@ class RuleHolder:
 if __name__ == "__main__":
     import datasets
     env = RuleHolder(datasets.ITA_Phonitalia())
-    print(env.read("abiura"))
+    c = 0
+    for word, pron in env.dataset.sample(1000):
+        targ = env.read(word)
+        if targ==pron:
+            c += 1
+        else:
+            print(word, targ, pron)
+    print("Accuracy: ", c/1000)

@@ -93,6 +93,7 @@ class ITA_Phonitalia(Dataset):
                                 ("u", "u"),
                                 ("v", "v"),
                                 ("z", "z"),
+                                ("z","Z"),
                                 ("x", "ks"),
                                 ("y", "i"),
                                 ("j", "j"),
@@ -101,7 +102,16 @@ class ITA_Phonitalia(Dataset):
                                 ("gn", "NN"),
                                 ("k", "k"),
                                 ("w","w"),
-                                ("q", "k")]
+                                ("q", "k"),
+                                ("ce", "ce"),
+                                ("ci", "c"),
+                                ("ge", "ge"),
+                                ("gi", "gi"),
+                                ("ngl","nGl"),
+                                ("ia", "ja"),
+                                ("io", "jo"),
+                                ("ie", "je"),
+                                ("iu", "ju")]
         super().__init__(self.data, self.headers)
 
 class Dummy:
