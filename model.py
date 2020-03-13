@@ -6,6 +6,9 @@ import torch.nn.functional as F
 from utils import prod
 
 class DQN(nn.Module):
+    """
+    Q Network accepting state and action and returning quality values for each action
+    """
     def __init__(self, observations_shape, action_shape):
         super(DQN, self).__init__()
         self.linearised = prod(observations_shape) + prod(action_shape)
@@ -15,6 +18,7 @@ class DQN(nn.Module):
         self.lin3 = nn.Linear(self.linearised//2, prod(action_shape))
 
     def forward(self, observation, action):
+        # Control for shape
         if observation.shape[0] == action.shape[0]:
             batch_size = observation.shape[0]
         else:
@@ -24,19 +28,21 @@ class DQN(nn.Module):
         observation = observation.view(batch_size, -1)
         action = action.view(batch_size, -1)
 
+        # concatenates the input
         ob_action = torch.cat((observation, action), dim=1)
 
         ob_action = F.relu(self.lin1(ob_action))
         ob_action = F.relu(self.lin2(ob_action))
         return F.relu(self.lin3(ob_action))
 
-# Don't have to be equal, neither different
-# Separation is just a clarity issue
-
 class PolicyNet(nn.Module):
+    """
+    Observes a state and performs an action
+    """
     def __init__(self, observation_shape, action_shape):
         super(PolicyNet, self).__init__()
 
+        # Calculates the dimension of the shape
         observation_shape = prod(observation_shape)
 
         self.lin1 = nn.Linear(observation_shape, observation_shape//3)
@@ -50,6 +56,10 @@ class PolicyNet(nn.Module):
 
 
 class DDPG_Metamodel:
+    """
+    Combines the precedent to networks into a DDPG Model
+    with both stable and unstable networks
+    """
     def __init__(self,
                     observation_shape,
                     actions_shape,
@@ -71,6 +81,7 @@ class DDPG_Metamodel:
         self.Q_optim = optim(self.Q_unstable.parameters(), lr=q_lr)
         self.Policy_optim = optim(self.Policy_unstable.parameters(), lr=p_lr)
 
+    ## The following produce actions according to stable or unstable policy
     def act_unstable(self, observation):
         with torch.no_grad():
             return self.Policy_unstable(observation)

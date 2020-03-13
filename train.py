@@ -35,6 +35,7 @@ for environment in [env, test_env]:
     environment.remove_rule('abc')
 '''
 
+# Creates a named tuple constructor called transition, containing specified elements
 Transition = namedtuple('Transition',
                         ('state', 'action', 'reward',  'next_state', 'done'))
 
@@ -43,6 +44,7 @@ cache = ReplayMemory(1000)
 BATCH_SIZE = 50
 GAMMA = 0.999
 RHO = 0.995
+# Decay would be better served by a function inverted sigmoid or the like
 #EPS_START = 0.9
 #EPS_END = 0.05
 #EPS_DECAY = 200
@@ -60,10 +62,12 @@ ACTION_NOISE = 0.1
 metamodel = DDPG_Metamodel(env.observation_space(), env.action_space())
 
 def select_action(observation, noise_scale):
+    "Adds noise to action and clips it within +- ACT_LIMIT"
     action = metamodel.act_unstable(observation)
     action += noise_scale * torch.randn(env.action_space())
     return np.clip(action, -ACT_LIMIT, ACT_LIMIT)
 
+# List of all episod accuracies
 episode_acc = []
 
 def plot_accuracy():
@@ -83,8 +87,11 @@ def plot_accuracy():
     plt.pause(0.001)
 
 def cache_batch(cache, batch_size):
+    "From cache createsa a batch to train the Q-network"
+    # unzips the Transition namnedtuples in cache to produce batches of each item in the tuple
     metabatch = Transition(*zip(*cache.sample(batch_size)))
 
+    # concatenates in batches
     state_batch = torch.cat(metabatch.state, dim=0)
     action_batch = torch.cat(metabatch.action, dim=0)
     reward_batch = torch.cat(metabatch.reward, dim=0)
@@ -94,11 +101,13 @@ def cache_batch(cache, batch_size):
     return state_batch, action_batch, reward_batch, next_state_batch, done_batch
 
 def observation_batch(cache, batch_size):
+    "gets a patch of states to train the Policy net"
     metabatch = Transition(*zip(*cache.sample(batch_size)))
     return torch.cat(metabatch.state, dim=0)
 
 
 def Q_loss():
+    "Comutes loss of the q network according to the revised bellman equation"
     obs, action, reward, next_obs, done = cache_batch(cache, BATCH_SIZE)
 
     q_unstable = metamodel.Q_unstable(obs, action)
@@ -115,12 +124,17 @@ def Q_loss():
     return ((q_unstable - subtractor)**2 ).mean()
 
 def Policy_loss():
+    """
+    Computes simple L1 norm loss on the policy network
+    We use gradient descent on the negated loss to ascend the gradient
+    """
     obs = observation_batch(cache, BATCH_SIZE)
     policy_loss = metamodel.Q_unstable(obs, metamodel.Policy_unstable(obs)) 
     return - policy_loss.mean()
 
 
 def test_policy():
+    "Tests the evironment on a complete set of actions using the stable env"
     for j in range(NUM_TEST_EPISODES):
         observation, done, episode_reward, episode_lenght = test_env.reset(), 0, 0, 0
         observation, reward, done, _ = test_env.step(select_action(observation, 0), complete=True)
@@ -130,8 +144,12 @@ def test_policy():
 
     
 def optimize_model():
+    "Function optimises the networks and transfers weighted parameters"
+    # checks if there is enough data in the cache to begin training
     if len(cache) < BATCH_SIZE:
         return False
+    
+    # steps the q network
     metamodel.Q_optim.zero_grad()
     q_loss = Q_loss()
     q_loss.backward()
@@ -141,6 +159,7 @@ def optimize_model():
     for parameter in metamodel.Q_unstable.parameters():
         parameter.requires_grad = False
 
+    # steps the policy network
     metamodel.Policy_optim.zero_grad()
     policy_loss = Policy_loss()
     policy_loss.backward()
@@ -179,15 +198,13 @@ for i_episode in range(MAX_EPISODES):
         if done:
             print("Got one")
 
-        #print(observation, reward, obs_prime, done, sep="\n")
-
+        # pushes the performed action, state and reward into the cache
         cache.push(observation.unsqueeze(0),
                 action.unsqueeze(0),
                 reward.unsqueeze(0).float(),
                 obs_prime.unsqueeze(0),
                 done.unsqueeze(0).float())
         
-        #print(len(cache))
 
         #Update to the most recent observation
         observation = obs_prime

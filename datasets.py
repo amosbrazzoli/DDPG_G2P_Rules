@@ -5,20 +5,26 @@ from random import randint, sample
 from utils import get_alphabet
 
 class Dataset:
+    """
+    Implements a blueprint class for datasets
+    """
     def __init__(self, data, headers):
         self.header = headers
         self.data = data
         self.words_name = headers[0]
         self.prons_name = headers[1]
+        # index used in the iterator
         self.i = 0
         self.word_abc = get_alphabet(self.data[self.words_name].to_list())
         self.pron_abc = get_alphabet(self.data[self.prons_name].to_list())
         self.sampled_indexes = set()
 
     def __getitem__(self, index):
+        # returns name and pronountiation
         return self.data[self.words_name].iloc[index].lower(), self.data[self.prons_name].iloc[index]
 
     def __next__(self):
+        # iterator implementation
         if self.i < self.__len__():
             self.i +=1
             return self[self.i-1]
@@ -32,9 +38,14 @@ class Dataset:
         return self.data.shape[0]
 
     def reset(self):
+        # resets the iterator
         self.i = 0
 
-    def sample(self, sample_lenght):
+    def sample(self, sample_lenght, resample=False):
+        """
+        Returns a sample of lenght sample_lenght
+        If not resample keeps note of the sampled items
+        """
         while len(self.sampled_indexes) < sample_lenght:
             while True:
                 x = randint(0, self.__len__()-2) # -2 to handle for heathers and last included
@@ -45,9 +56,11 @@ class Dataset:
                     except:
                         print(x, self[x-1])
                     break
-        self.sampled_indexes = set()
+        if not resample
+            self.sampled_indexes = set()
 
 class ENG_WUsL(Dataset):
+
     def __init__(self, path='Datasets/ENG/WUsLData.csv', headers=["Word","Pron"]):
         self.path = path
         self.headers = headers
@@ -115,6 +128,9 @@ class ITA_Phonitalia(Dataset):
         super().__init__(self.data, self.headers)
 
 class Dummy:
+    '''
+    Dummy dataset
+    '''
     def __init__(self, lenght=10_000):
         self.lenght = lenght
         self.default_rules = [('abc', 'zh'),

@@ -5,7 +5,7 @@ Transition = namedtuple('Transition',
                         ('state', 'action', 'reward',  'next_state', 'done'))
 
 class ReplayMemory(object):
-
+    "Class of a replay memory of variable lenght"
     def __init__(self, capacity):
         self.capacity = capacity
         self.memory = []
